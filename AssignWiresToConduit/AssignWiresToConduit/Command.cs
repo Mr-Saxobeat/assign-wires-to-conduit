@@ -5,6 +5,7 @@ using System.Diagnostics;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Element;
 using Autodesk.Revit.DB.Electrical;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
@@ -64,19 +65,38 @@ namespace AssignWiresToConduit
             gaugeParameters[5] = "6.4. Bitola";
             #endregion
 
+            //Array containing the A, B and C chars
+            //that will be concatenated to find 
+            //a parameter.
+            string[] abcPhases = new string[3];
+            #region Declare ABC phases
+            abcPhases[0] = "A";
+            abcPhases[1] = "B";
+            abcPhases[2] = "C";
+            #endregion
+
             //Iterates with each conduit
             foreach (Conduit c in listConduits)
             {
                 //Iterates with each wiringParameters
                 for (int i = 0; i < 6; i++)
                 {
+                    //Get the wiring parameter
                     Parameter wiringParam = c.LookupParameter(wiringParameters[i]);
                     if (wiringParam.HasValue)
                     {
+                        //Get the gauge parameter
                         Parameter gaugeParam = c.LookupParameter(gaugeParameters[i]);
                         if(gaugeParam.HasValue)
                         {
-                            int nPhases = CountPhases(wiringParam.ToString());    
+                            //Get the number of phases the current wiring have
+                            int nPhases = CountPhases(wiringParam.ToString());
+
+                            //For each phase
+                            for (int j = 0; j < nPhases; j++)
+                            {
+                                
+                            }
                         }
                     }
                 }
