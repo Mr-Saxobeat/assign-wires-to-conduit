@@ -1,2 +1,2 @@
 # assign-wires-to-conduit
-This Revit plugin assigns the quantity of wires that passes in wich conduit and the gauges.
+This Revit C# plugin assign the quantity of wires and your gauges that passes in conduits to each of them.
