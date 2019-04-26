@@ -74,31 +74,65 @@ namespace AssignWiresToConduit
             abcPhases[2] = "C";
             #endregion
 
-            //Iterates with each conduit
-            foreach (Conduit c in listConduits)
+            using (Transaction t = new Transaction(doc, "AssignWiring"))
             {
-                //Iterates with each wiringParameters
-                for (int i = 0; i < 6; i++)
+                t.Start();
+                //Iterates with each conduit
+                foreach (Conduit c in listConduits)
                 {
-                    //Get the wiring parameter
-                    Parameter wiringParam = c.LookupParameter(wiringParameters[i]);
-                    if (wiringParam.HasValue)
+                    //Iterates with each wiringParameters
+                    for (int i = 0; i < 6; i++)
                     {
-                        //Get the gauge parameter
-                        Parameter gaugeParam = c.LookupParameter(gaugeParameters[i]);
-                        if(gaugeParam.HasValue)
+                        //Get the wiring parameter
+                        Parameter wiringParam = c.LookupParameter(wiringParameters[i]);
+                        if (wiringParam.HasValue)
                         {
-                            //Get the number of phases the current wiring have
-                            int nPhases = CountPhases(wiringParam.ToString());
-
-                            //For each phase
-                            for (int j = 0; j < nPhases; j++)
+                            //Get the gauge parameter
+                            Parameter gaugeParam = c.LookupParameter(gaugeParameters[i]);
+                            if (gaugeParam.HasValue)
                             {
-                                
+                                //Get the number of phases the current wiring have
+                                int nPhases = CountPhases(wiringParam.AsString());
+
+                                //For each phase
+                                for (int j = 0; j < nPhases; j++)
+                                {
+
+                                    //NumberFormatInfo provider = new NumberFormatInfo();
+                                    //NumberFormat
+
+                                    //The name of parameter that will be set
+                                    //There are a problem here. I need to format the gaugeParamValue to "XX,0"***********************************
+                                    string gaugePhaseParamName =
+                                        gaugeParam.AsValueString() + "mm²_Fase " + abcPhases[j];
+
+                                    string a = "a";
+                                    Convert.ToDouble(a, 
+                                    //Get the parameter with the 
+                                    //respective gauge and  phase
+                                    Parameter gaugePhaseParam = c
+                                        .LookupParameter(gaugePhaseParamName);
+                                    if (gaugePhaseParam.HasValue)
+                                    {
+                                        int currentValue = gaugePhaseParam.AsInteger();
+
+                                        try
+                                        {
+                                            gaugePhaseParam.Set(currentValue++);
+                                        }
+                                        catch (Exception ex)
+                                        {
+
+                                            TaskDialog.Show("Error: ", ex.Message); 
+                                        }
+                                        
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                t.Commit();
             }
 
             return Result.Succeeded;
