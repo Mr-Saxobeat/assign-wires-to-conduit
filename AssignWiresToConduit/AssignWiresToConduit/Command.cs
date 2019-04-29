@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
@@ -31,7 +32,6 @@ namespace AssignWiresToConduit
             #region GetConduits
             FilteredElementCollector collector = new FilteredElementCollector(doc);
             ICollection<Element> conduits = collector.OfClass(typeof(Conduit)).ToElements();
-
             //Add conduits elements to listConduits
             foreach (Conduit c in conduits)
             {
@@ -98,34 +98,35 @@ namespace AssignWiresToConduit
                                 for (int j = 0; j < nPhases; j++)
                                 {
 
-                                    //NumberFormatInfo provider = new NumberFormatInfo();
-                                    //NumberFormat
+                                    string gaugeParamPrefix = gaugeParam.AsString();
+                                    if (gaugeParamPrefix.Contains("."))
+                                    {
+                                        gaugeParamPrefix = gaugeParamPrefix.Replace(".", ",");
+                                    }
+                                    else if (!gaugeParamPrefix.Contains(","))
+                                    {
+                                        gaugeParamPrefix = gaugeParamPrefix + ",0";
+                                    }
 
                                     //The name of parameter that will be set
-                                    //There are a problem here. I need to format the gaugeParamValue to "XX,0"***********************************
                                     string gaugePhaseParamName =
-                                        gaugeParam.AsValueString() + "mm²_Fase " + abcPhases[j];
+                                        gaugeParamPrefix + "mm²_Fase " + abcPhases[j];
 
-                                    string a = "a";
-                                    Convert.ToDouble(a, 
                                     //Get the parameter with the 
                                     //respective gauge and  phase
                                     Parameter gaugePhaseParam = c
                                         .LookupParameter(gaugePhaseParamName);
-                                    if (gaugePhaseParam.HasValue)
+                                    
+                                    int currentValue = gaugePhaseParam.AsInteger();
+                                    
+                                    try
                                     {
-                                        int currentValue = gaugePhaseParam.AsInteger();
+                                        gaugePhaseParam.Set(++currentValue);
+                                    }
+                                    catch (Exception ex)
+                                    {
 
-                                        try
-                                        {
-                                            gaugePhaseParam.Set(currentValue++);
-                                        }
-                                        catch (Exception ex)
-                                        {
-
-                                            TaskDialog.Show("Error: ", ex.Message); 
-                                        }
-                                        
+                                        TaskDialog.Show("Error: ", ex.Message); 
                                     }
                                 }
                             }
@@ -134,7 +135,6 @@ namespace AssignWiresToConduit
                 }
                 t.Commit();
             }
-
             return Result.Succeeded;
         }
 
