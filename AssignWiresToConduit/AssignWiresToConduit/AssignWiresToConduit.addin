@@ -1,20 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <RevitAddIns>
   <AddIn Type="Command">
-    <Text>Command AssignWiresToConduit</Text>
-    <Description>Some description for AssignWiresToConduit</Description>
+    <Text>AssignWiresToConduit</Text>
+    <Description>AssignWiresToConduit</Description>
     <Assembly>AssignWiresToConduit.dll</Assembly>
     <FullClassName>AssignWiresToConduit.Command</FullClassName>
     <ClientId>0c1adcb0-7b99-48de-a50f-e9c045b854bd</ClientId>
-    <VendorId>com.typepad.thebuildingcoder</VendorId>
-    <VendorDescription>The Building Coder, http://thebuildingcoder.typepad.com</VendorDescription>
-  </AddIn>
-  <AddIn Type="Application">
-    <Name>Application AssignWiresToConduit</Name>
-    <Assembly>AssignWiresToConduit.dll</Assembly>
-    <FullClassName>AssignWiresToConduit.App</FullClassName>
-    <ClientId>de8534fe-13a8-41db-8e95-11b2b285cd36</ClientId>
-    <VendorId>com.typepad.thebuildingcoder</VendorId>
-    <VendorDescription>The Building Coder, http://thebuildingcoder.typepad.com</VendorDescription>
+    <VendorId>Teste</VendorId>
+    <VendorDescription>Weiglas Ribeiro</VendorDescription>
   </AddIn>
 </RevitAddIns>

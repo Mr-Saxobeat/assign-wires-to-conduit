@@ -1,5 +1,6 @@
 #region Namespaces
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -7,8 +8,11 @@ using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Electrical;
+using Autodesk.Revit.DB.Mechanical;
+using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
+
 #endregion
 
 namespace AssignWiresToConduit
@@ -27,13 +31,20 @@ namespace AssignWiresToConduit
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
 
-            List<Conduit> listConduits = new List<Conduit>();
+            List<Element> listConduits = new List<Element>();
             //Get all conduits from DB
             #region GetConduits
-            FilteredElementCollector collector = new FilteredElementCollector(doc);
-            ICollection<Element> conduits = collector.OfClass(typeof(Conduit)).ToElements();
-            //Add conduits elements to listConduits
-            foreach (Conduit c in conduits)
+            //FilteredElementCollector collector = new FilteredElementCollector(doc);
+            //ICollection<Element> conduits = collector.OfClass(typeof(Conduit)).ToElements();
+            ////Add conduits elements to listConduits
+            //foreach (Conduit c in conduits)
+            //{
+            //    listConduits.Add(c);
+            //}
+
+            FilteredElementCollector collector = GetConnectorElements(doc, false);
+            ICollection<Element> conduits = collector.ToElements();
+            foreach (Element c in conduits)
             {
                 listConduits.Add(c);
             }
@@ -78,7 +89,9 @@ namespace AssignWiresToConduit
             {
                 t.Start();
                 //Iterates with each conduit
-                foreach (Conduit c in listConduits)
+                //foreach (Conduit c in listConduits)
+                foreach (Element c in listConduits)
+
                 {
                     //Iterates with each wiringParameters
                     for (int i = 0; i < 6; i++)
@@ -153,6 +166,82 @@ namespace AssignWiresToConduit
             }
 
             return nPhases;
+        }
+
+        //I was having trouble with FilteredELementCollector to
+        //retrieve "Conduit Fittings", so a got this code that worked for me.
+        //--------------------------------------------------------------------
+        //Returns a FilteredElementCollector with the connector elements
+        //https://thebuildingcoder.typepad.com/blog/2010/06/retrieve-mep-elements-and-connectors.html
+        //Jeremy Tammik
+        static FilteredElementCollector GetConnectorElements(
+            Document doc,
+            bool include_wires)
+        {
+            // what categories of family instances
+            // are we interested in?
+
+            BuiltInCategory[] bics = new BuiltInCategory[] {
+                //BuiltInCategory.OST_CableTray,
+                //BuiltInCategory.OST_CableTrayFitting,
+                BuiltInCategory.OST_Conduit,
+                BuiltInCategory.OST_ConduitFitting,
+                //BuiltInCategory.OST_DuctCurves,
+                //BuiltInCategory.OST_DuctFitting,
+                //BuiltInCategory.OST_DuctTerminal,
+                //BuiltInCategory.OST_ElectricalEquipment,
+                //BuiltInCategory.OST_ElectricalFixtures,
+                //BuiltInCategory.OST_LightingDevices,
+                //BuiltInCategory.OST_LightingFixtures,
+                //BuiltInCategory.OST_MechanicalEquipment,
+                //BuiltInCategory.OST_PipeCurves,
+                //BuiltInCategory.OST_PipeFitting,
+                //BuiltInCategory.OST_PlumbingFixtures,
+                //BuiltInCategory.OST_SpecialityEquipment,
+                //BuiltInCategory.OST_Sprinklers,
+                //BuiltInCategory.OST_Wire,
+            };
+
+            IList<ElementFilter> a
+              = new List<ElementFilter>(bics.Count());
+
+            foreach (BuiltInCategory bic in bics)
+            {
+                a.Add(new ElementCategoryFilter(bic));
+            }
+
+            LogicalOrFilter categoryFilter
+              = new LogicalOrFilter(a);
+
+            LogicalAndFilter familyInstanceFilter
+              = new LogicalAndFilter(categoryFilter,
+                new ElementClassFilter(
+                  typeof(FamilyInstance)));
+
+            IList<ElementFilter> b
+              = new List<ElementFilter>(6);
+
+            b.Add(new ElementClassFilter(typeof(CableTray)));
+            b.Add(new ElementClassFilter(typeof(Conduit)));
+            b.Add(new ElementClassFilter(typeof(Duct)));
+            b.Add(new ElementClassFilter(typeof(Pipe)));
+            
+            if (include_wires)
+            {
+                b.Add(new ElementClassFilter(typeof(Wire)));
+            }
+
+            b.Add(familyInstanceFilter);
+
+            LogicalOrFilter classFilter
+              = new LogicalOrFilter(b);
+
+            FilteredElementCollector collector
+              = new FilteredElementCollector(doc);
+
+            collector.WherePasses(classFilter);
+
+            return collector;
         }
     }
 }
