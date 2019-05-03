@@ -129,18 +129,22 @@ namespace AssignWiresToConduit
                                     //respective gauge and  phase
                                     Parameter gaugePhaseParam = c
                                         .LookupParameter(gaugePhaseParamName);
-                                    
-                                    int currentValue = gaugePhaseParam.AsInteger();
-                                    
-                                    try
-                                    {
-                                        gaugePhaseParam.Set(++currentValue);
-                                    }
-                                    catch (Exception ex)
-                                    {
 
-                                        TaskDialog.Show("Error: ", ex.Message); 
+                                    if (gaugePhaseParam != null)
+                                    {
+                                        int currentValue = gaugePhaseParam.AsInteger();
+
+                                        try
+                                        {
+                                            gaugePhaseParam.Set(++currentValue);
+                                        }
+                                        catch (Exception ex)
+                                        {
+
+                                            TaskDialog.Show("Error: ", ex.Message);
+                                        }
                                     }
+                                    
                                 }
                             }
                         }
