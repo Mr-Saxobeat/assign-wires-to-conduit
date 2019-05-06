@@ -31,17 +31,9 @@ namespace AssignWiresToConduit
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
 
-            List<Element> listConduits = new List<Element>();
             //Get all conduits from DB
+            List<Element> listConduits = new List<Element>();
             #region GetConduits
-            //FilteredElementCollector collector = new FilteredElementCollector(doc);
-            //ICollection<Element> conduits = collector.OfClass(typeof(Conduit)).ToElements();
-            ////Add conduits elements to listConduits
-            //foreach (Conduit c in conduits)
-            //{
-            //    listConduits.Add(c);
-            //}
-
             FilteredElementCollector collector = GetConnectorElements(doc, false);
             ICollection<Element> conduits = collector.ToElements();
             foreach (Element c in conduits)
@@ -49,9 +41,6 @@ namespace AssignWiresToConduit
                 listConduits.Add(c);
             }
             #endregion
-
-            //This dict remains the "wiring" as key and the gauge as value
-            Dictionary<string, double> wireGaugePairs = new Dictionary<string, double>();
 
             //Array of wiringParameters that will be get from conduits
             string[] wiringParameters = new string[6];
@@ -85,6 +74,9 @@ namespace AssignWiresToConduit
             abcPhases[2] = "C";
             #endregion
 
+            //
+            string gaugePhaseParamName = "";
+
             using (Transaction t = new Transaction(doc, "AssignWiring"))
             {
                 t.Start();
@@ -104,47 +96,97 @@ namespace AssignWiresToConduit
                             Parameter gaugeParam = c.LookupParameter(gaugeParameters[i]);
                             if (gaugeParam.HasValue)
                             {
-                                //Get the number of phases the current wiring have
-                                int nPhases = CountPhases(wiringParam.AsString());
-
-                                //For each phase
-                                for (int j = 0; j < nPhases; j++)
+                                //Formats the string gauge to concatenate to the 
+                                //string parameter to look up
+                                string gaugeParamPrefix = gaugeParam.AsString();
+                                if (gaugeParamPrefix.Contains("."))
                                 {
+                                    gaugeParamPrefix = gaugeParamPrefix.Replace(".", ",");
+                                }
+                                else if (!gaugeParamPrefix.Contains(","))
+                                {
+                                    gaugeParamPrefix = gaugeParamPrefix + ",0";
+                                }
 
-                                    string gaugeParamPrefix = gaugeParam.AsString();
-                                    if (gaugeParamPrefix.Contains("."))
+                                //Get the number of each phase (F, N, T, and R) the current wiring have
+                                Dictionary<string, int> phases = CountPhases(wiringParam.AsString());
+
+                                foreach (string k in phases.Keys)
+                                {
+                                    if (k == "F")
                                     {
-                                        gaugeParamPrefix = gaugeParamPrefix.Replace(".", ",");
-                                    }
-                                    else if (!gaugeParamPrefix.Contains(","))
-                                    {
-                                        gaugeParamPrefix = gaugeParamPrefix + ",0";
-                                    }
-
-                                    //The name of parameter that will be set
-                                    string gaugePhaseParamName =
-                                        gaugeParamPrefix + "mm²_Fase " + abcPhases[j];
-
-                                    //Get the parameter with the 
-                                    //respective gauge and  phase
-                                    Parameter gaugePhaseParam = c
-                                        .LookupParameter(gaugePhaseParamName);
-
-                                    if (gaugePhaseParam != null)
-                                    {
-                                        int currentValue = gaugePhaseParam.AsInteger();
-
-                                        try
+                                        int nPhasesF = phases[k];
+                                        //For each phase F
+                                        for (int j = 0; j < nPhasesF; j++)
                                         {
-                                            gaugePhaseParam.Set(++currentValue);
-                                        }
-                                        catch (Exception ex)
-                                        {
+                                            //The name of parameter that will be set
+                                            gaugePhaseParamName =
+                                                gaugeParamPrefix + "mm²_Fase " + abcPhases[j];
 
-                                            TaskDialog.Show("Error: ", ex.Message);
+                                            //Get the parameter with the 
+                                            //respective gauge and  phase
+                                            Parameter gaugePhaseParam = c
+                                                .LookupParameter(gaugePhaseParamName);
+
+                                            if (gaugePhaseParam != null)
+                                            {
+                                                int currentValue = gaugePhaseParam.AsInteger();
+
+                                                try
+                                                {
+                                                    gaugePhaseParam.Set(++currentValue);
+                                                }
+                                                catch (Exception ex)
+                                                {
+
+                                                    TaskDialog.Show("Error: ", ex.Message);
+                                                }
+                                            }
                                         }
                                     }
-                                    
+                                    else
+                                    {
+                                        if (k == "N")
+                                        {
+                                            //The name of parameter that will be set
+                                            gaugePhaseParamName =
+                                                gaugeParamPrefix + "mm²_Neutro";
+                                        }
+                                        else if(k == "T")
+                                        {
+                                            //The name of parameter that will be set
+                                            gaugePhaseParamName =
+                                                gaugeParamPrefix + "mm²_Terra";
+                                        }
+                                        else if(k == "R")
+                                        {
+                                            //The name of parameter that will be set
+                                            gaugePhaseParamName =
+                                                gaugeParamPrefix + "mm²_Retorno";
+                                        }
+
+                                        //Get the parameter with the 
+                                        //respective gauge and  phase
+                                        Parameter gaugePhaseParam = c
+                                            .LookupParameter(gaugePhaseParamName);
+
+                                        
+                                        if (gaugePhaseParam != null)
+                                        {
+                                            int currentValue = gaugePhaseParam.AsInteger();
+
+                                            try
+                                            {
+                                                gaugePhaseParam.Set(currentValue + phases[k]);
+                                            }
+                                            catch (Exception ex)
+                                            {
+
+                                                TaskDialog.Show("Error: ", ex.Message);
+                                            }
+                                        }
+
+                                    }
                                 }
                             }
                         }
@@ -155,21 +197,28 @@ namespace AssignWiresToConduit
             return Result.Succeeded;
         }
 
-        //Return the number of phases of the 
-        //given wiring configurantion.
-        private int CountPhases(string wiring)
+
+        //Returns a dictionary containing the phases and 
+        //your quantity that run inside the conduit.
+        private Dictionary<string, int> CountPhases(string wiring)
         {
-            int nPhases = 0;
+            Dictionary<string, int> phases = new Dictionary<string, int>();
 
             foreach (char c in wiring)
             {
-                if (c.ToString() == "F")
+                string key = c.ToString();
+
+                if (!phases.ContainsKey(key))
                 {
-                    nPhases++;
+                    phases.Add(key, 1);
+                }
+                else
+                {
+                    phases[key] = phases[key] + 1;
                 }
             }
 
-            return nPhases;
+            return phases;
         }
 
         //I was having trouble with FilteredELementCollector to
