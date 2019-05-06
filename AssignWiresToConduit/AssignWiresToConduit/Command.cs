@@ -152,13 +152,13 @@ namespace AssignWiresToConduit
                                             gaugePhaseParamName =
                                                 gaugeParamPrefix + "mm²_Neutro";
                                         }
-                                        else if(k == "T")
+                                        else if (k == "T")
                                         {
                                             //The name of parameter that will be set
                                             gaugePhaseParamName =
                                                 gaugeParamPrefix + "mm²_Terra";
                                         }
-                                        else if(k == "R")
+                                        else if (k == "R")
                                         {
                                             //The name of parameter that will be set
                                             gaugePhaseParamName =
